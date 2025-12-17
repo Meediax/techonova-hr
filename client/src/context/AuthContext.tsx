@@ -1,89 +1,78 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-// 1. Define the shape of the User object (matches your backend response)
 interface User {
-  id: string;
-  first_name: string;
-  role: 'Admin' | 'Manager' | 'Employee';
-  company_id: string;
+  userId: string;
+  email: string;
+  role: string;
 }
 
-// 2. Define what the Context provides to the app
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (token: string, user: User) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 3. The Provider Component
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // Check LocalStorage on initial load (Did they log in yesterday?)
+  // 1. Check if user is logged in on page load
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      // Set the default Authorization header for all future axios requests
-      axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-    }
-    setIsLoading(false);
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        // Set default header for all future requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        try {
+          // 👇 NOTICE: No "http://localhost:3000" here. Just the path.
+          // Axios will verify the token with the backend
+          // (Assuming you have a verify route, or we just decode the token locally)
+          // For simplicity in this project, we often just trust the token exists:
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUser({ userId: payload.userId, email: payload.email, role: payload.role });
+        } catch (err) {
+          console.error("Invalid token", err);
+          localStorage.removeItem('token');
+        }
+      }
+      setLoading(false);
+    };
+    checkAuth();
   }, []);
 
-  // Login Function
-  const login = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
+  // 2. Login Function
+  const login = async (email: string, password: string) => {
+    // 👇 CRITICAL FIX: Remove "http://localhost:3000"
+    // Use the relative path so it uses the baseURL from main.tsx
+    const res = await axios.post('/api/auth/login', { email, password });
     
-    // Save to LocalStorage
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    const { token, user: userData } = res.data;
+    localStorage.setItem('token', token);
     
-    // Set Axios Header
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    // Set header for future requests
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setUser(userData);
   };
 
-  // Logout Function
   const logout = () => {
-    setToken(null);
-    setUser(null);
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        token, 
-        isAuthenticated: !!token, 
-        isLoading, 
-        login, 
-        logout 
-      }}
-    >
-      {children}
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
 
-// 4. Custom Hook for easy usage
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
