@@ -10,19 +10,26 @@ export const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch your real counts from the backend
-        const [empRes, leaveRes] = await Promise.all([
+        // 1. Fetch data from live endpoints
+        const [empRes, leaveRes, payrollRes] = await Promise.all([
           axios.get('/api/employees'),
-          axios.get('/api/time-off/pending') // adjust paths to match your actual backend routes
+          axios.get('/api/time-off'),
+          axios.get('/api/payroll')
         ]);
         
+        // 2. DEBUG LOGS - Open your browser console (F12) to see these!
+        console.log("Employees Data:", empRes.data);
+        console.log("Time Off Data:", leaveRes.data);
+        console.log("Payroll Data:", payrollRes.data);
+
+        // 3. Update stats based on array lengths
         setStats({
-          employees: empRes.data.length || 0,
-          timeOff: leaveRes.data.length || 0,
-          payroll: 0 // Placeholder until payroll is set up
+          employees: Array.isArray(empRes.data) ? empRes.data.length : 0,
+          timeOff: Array.isArray(leaveRes.data) ? leaveRes.data.length : 0,
+          payroll: Array.isArray(payrollRes.data) ? payrollRes.data.length : 0
         });
       } catch (err) {
-        console.error("Error fetching dashboard stats:", err);
+        console.error("Dashboard fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -35,7 +42,7 @@ export const Dashboard = () => {
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.email}</h1>
-        <p className="text-gray-500">System overview and quick actions.</p>
+        <p className="text-gray-500">Real-time system overview.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
