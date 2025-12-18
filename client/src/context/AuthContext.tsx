@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
         console.error("Token decode failed during login", e);
     }
-};
+  };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
