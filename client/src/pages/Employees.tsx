@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Plus, X, User, Mail, Briefcase, BadgeCheck, Clock } from 'lucide-react';
+import { Plus, X, User, Mail, Briefcase, BadgeCheck, Clock, IdentificationCard } from 'lucide-react';
 
 export const Employees = () => {
   const { user } = useAuth();
@@ -13,7 +13,8 @@ export const Employees = () => {
     last_name: '', 
     email: '', 
     role: 'Employee',
-    employment_type: 'Full-time'
+    employment_type: 'Full-time',
+    job_title: '' // ✅ Job Title added to state
   });
 
   // Fetch logic
@@ -34,19 +35,24 @@ export const Employees = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Temporary: Save WITHOUT company_id to test database write access
       const payload = {
         first_name: newEmployee.first_name,
         last_name: newEmployee.last_name,
         email: newEmployee.email,
         role: newEmployee.role,
-        employment_type: newEmployee.employment_type
+        employment_type: newEmployee.employment_type,
+        job_title: newEmployee.job_title // ✅ Job Title added to payload
       };
 
       await axios.post('/api/employees', payload);
       
       setIsModalOpen(false);
-      fetchEmployees(); // Refresh the list
+      // Reset form including job_title
+      setNewEmployee({ 
+        first_name: '', last_name: '', email: '', 
+        role: 'Employee', employment_type: 'Full-time', job_title: '' 
+      });
+      fetchEmployees(); 
     } catch (err) {
       console.error("Database Save Error:", err);
       alert("Failed to save. Your database might require a Company ID.");
@@ -77,7 +83,7 @@ export const Employees = () => {
         <table className="w-full text-left">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Name & Title</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Contact</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Role & Type</th>
             </tr>
@@ -91,7 +97,10 @@ export const Employees = () => {
                       <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
                         {emp.first_name[0]}{emp.last_name[0]}
                       </div>
-                      <span className="font-semibold text-gray-900">{emp.first_name} {emp.last_name}</span>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-gray-900">{emp.first_name} {emp.last_name}</span>
+                        <span className="text-xs text-gray-500">{emp.job_title || 'No Title'}</span>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-gray-600 text-sm">
@@ -135,6 +144,7 @@ export const Employees = () => {
             </div>
             
             <form onSubmit={handleAddEmployee} className="p-8 space-y-5">
+              {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">First Name</label>
@@ -155,6 +165,19 @@ export const Employees = () => {
                 </div>
               </div>
 
+              {/* Job Title Field ✅ */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Job Title</label>
+                <div className="relative">
+                  <Briefcase size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <input required className="w-full border rounded-xl pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all bg-gray-50/30" 
+                    placeholder="Software Engineer"
+                    value={newEmployee.job_title} 
+                    onChange={e => setNewEmployee({...newEmployee, job_title: e.target.value})} />
+                </div>
+              </div>
+
+              {/* Email Field */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Email Address</label>
                 <div className="relative">
@@ -166,24 +189,22 @@ export const Employees = () => {
                 </div>
               </div>
 
+              {/* Select Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Role</label>
-                  <div className="relative">
-                    <Briefcase size={16} className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                    <select className="w-full border rounded-xl pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-gray-50/30 appearance-none"
-                      value={newEmployee.role}
-                      onChange={e => setNewEmployee({...newEmployee, role: e.target.value})}
-                    >
-                      <option value="Employee">Employee</option>
-                      <option value="Manager">Manager</option>
-                      <option value="Admin">Admin</option>
-                    </select>
-                  </div>
+                  <select className="w-full border rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-gray-50/30"
+                    value={newEmployee.role}
+                    onChange={e => setNewEmployee({...newEmployee, role: e.target.value})}
+                  >
+                    <option value="Employee">Employee</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Admin">Admin</option>
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Employment Type</label>
-                  <select className="w-full border rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-gray-50/30 appearance-none"
+                  <select className="w-full border rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-gray-50/30"
                     value={newEmployee.employment_type}
                     onChange={e => setNewEmployee({...newEmployee, employment_type: e.target.value})}
                   >
