@@ -11,14 +11,17 @@ export const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // We call the endpoint that we KNOW works from your console logs
-        const empRes = await axios.get('/api/employees');
+        // Fetch all data in parallel from your endpoints
+        const [empRes, leaveRes, payrollRes] = await Promise.all([
+          axios.get('/api/employees').catch(() => ({ data: [] })),
+          axios.get('/api/time-off').catch(() => ({ data: [] })),
+          axios.get('/api/payroll').catch(() => ({ data: [] }))
+        ]);
         
-        // This will now count ALL employees in that table (should be 5)
         setStats({
           employees: Array.isArray(empRes.data) ? empRes.data.length : 0,
-          timeOff: 0, // Set to 0 for now until those routes are fixed
-          payroll: 0
+          timeOff: Array.isArray(leaveRes.data) ? leaveRes.data.length : 0,
+          payroll: Array.isArray(payrollRes.data) ? payrollRes.data.length : 0
         });
       } catch (err) {
         console.error("Dashboard error:", err);
