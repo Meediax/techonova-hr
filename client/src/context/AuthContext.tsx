@@ -48,24 +48,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // 2. Login Function (Updated to manually decode token)
   const login = async (email: string, password: string) => {
-    // Call backend
+    console.log("🚀 Sending Login Request...");
+    
     const res = await axios.post('/api/auth/login', { email, password });
     
-    // Get token
-    const { token } = res.data;
-    
-    // Save token
+    // 👇 THIS LOG WILL REVEAL THE TRUTH
+    console.log("✅ SERVER RESPONSE:", res.data); 
+
+    // Try to find the token (Handle both common names)
+    const token = res.data.token || res.data.accessToken || res.data.access_token;
+
+    if (!token) {
+      console.error("❌ NO TOKEN FOUND in response!", res.data);
+      throw new Error("Server sent 200 OK, but no token found.");
+    }
+
+    // Save and Decode
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
-    // Decode user data from token immediately
-    // This ensures we don't rely on the backend sending a separate 'user' object
     try {
       const parts = token.split('.');
       const payload = JSON.parse(atob(parts[1]));
       setUser({ userId: payload.userId, email: payload.email, role: payload.role });
     } catch (e) {
-      console.error("Failed to decode token", e);
+      console.error("⚠️ Token decode failed (but login succeeded):", e);
     }
   };
 
