@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { Users, Calendar, CreditCard, Activity } from 'lucide-react';
 
 export const Dashboard = () => {
   const { user } = useAuth();
@@ -10,41 +11,56 @@ export const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // We know /api/employees works because of your console log!
-        const empRes = await axios.get('/api/employees');
-        
-        // Let's also fetch time-off and payroll
-        const [leaveRes, payrollRes] = await Promise.all([
-          axios.get('/api/time-off').catch(() => ({ data: [] })),
-          axios.get('/api/payroll').catch(() => ({ data: [] }))
+        const [empRes, leaveRes, payrollRes] = await Promise.all([
+          axios.get('/api/employees'),
+          axios.get('/api/time-off'),
+          axios.get('/api/payroll')
         ]);
 
         setStats({
-          employees: empRes.data.length, // This should now show 4
-          timeOff: leaveRes.data.length,
-          payroll: payrollRes.data.length
+          employees: Array.isArray(empRes.data) ? empRes.data.length : 0,
+          timeOff: Array.isArray(leaveRes.data) ? leaveRes.data.length : 0,
+          payroll: Array.isArray(payrollRes.data) ? payrollRes.data.length : 0
         });
       } catch (err) {
-        console.error("Dashboard error:", err);
+        console.error("Dashboard sync error:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchStats();
   }, []);
 
+  const statCards = [
+    { label: 'Active Employees', value: stats.employees, icon: <Users className="text-blue-600" />, color: 'bg-blue-50' },
+    { label: 'Pending Leave', value: stats.timeOff, icon: <Calendar className="text-orange-600" />, color: 'bg-orange-50' },
+    { label: 'Upcoming Payroll', value: stats.payroll, icon: <CreditCard className="text-green-600" />, color: 'bg-green-50' }
+  ];
+
   return (
-    <div className="space-y-6 p-4">
-      <header>
-        <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.email}</h1>
-      </header>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-gray-400 text-sm font-medium uppercase">Active Employees</h3>
-          <p className="text-3xl font-bold mt-2 text-blue-600">{loading ? '...' : stats.employees}</p>
+    <div className="p-6 space-y-8">
+      <header className="flex items-center gap-4">
+        <div className="p-3 bg-blue-600 rounded-lg text-white">
+          <Activity size={24} />
         </div>
-        {/* ... other cards ... */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">HR Overview</h1>
+          <p className="text-gray-500 text-sm">Welcome back, {user?.email}</p>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {statCards.map((card, index) => (
+          <div key={index} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5">
+            <div className={`p-4 rounded-xl ${card.color}`}>
+              {card.icon}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{card.label}</p>
+              <p className="text-3xl font-bold text-gray-900">{loading ? '...' : card.value}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
