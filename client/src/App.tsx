@@ -1,36 +1,52 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
-import { Employees } from './pages/Employees';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { DashboardLayout } from './layouts/DashboardLayout';
-import { TimeOff } from './pages/TimeOff';
-import { Payroll } from './pages/Payroll';
-import { Profile } from './pages/Profile';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
+// 🛡️ Guard Component
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading User Data...</div>;
+  }
+
+  if (!user) {
+    // If not logged in, kick back to login
+    return <Navigate to="/login" replace />;
+  }
+
+  // If logged in, show the page
+  return children;
+};
+
+// 🧭 Main App Component
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
+      {/* AuthProvider is NOW strictly inside the Router */}
+      <AuthProvider>
+        <Routes>
+          {/* Login Page */}
+          <Route path="/login" element={<Login />} />
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            
-            {/* THIS IS THE CRITICAL CHANGE */}
-            <Route path="/employees" element={<Employees />} />            
-            <Route path="/time-off" element={<TimeOff />} />
-            <Route path="/payroll" element={<Payroll />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
-        </Route>
+          {/* Protected Dashboard */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
 
-        {/* Redirect unknown routes */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
