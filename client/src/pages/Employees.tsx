@@ -1,87 +1,74 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus } from 'lucide-react';
-import { CreateEmployeeModal } from '../components/CreateEmployeeModal'; // <--- Import Component
 
 export const Employees = () => {
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [error, setError] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false); // <--- New State
+  const [employees, setEmployees] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({ first_name: '', last_name: '', email: '', role: 'Employee' });
 
-  // Reuse the fetch function so we can call it after adding a user
+  // Load employees from the live database
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get('/api/employees');
-      if (Array.isArray(response.data)) {
-        setEmployees(response.data);
-      } else {
-        setError('Server returned invalid data.');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load employees');
+      const res = await axios.get('/api/employees');
+      setEmployees(res.data);
+    } catch (err) {
+      console.error("Failed to fetch employees", err);
     }
   };
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
+  useEffect(() => { fetchEmployees(); }, []);
+
+  const handleAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await axios.post('/api/employees', newEmployee);
+      setIsModalOpen(false);
+      fetchEmployees(); // Refresh the list
+    } catch (err) {
+      alert("Error adding employee. Check console.");
+    }
+  };
 
   return (
-    <div className="p-10 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
-        {/* Update Button to open modal */}
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Employees</h1>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
         >
-          <Plus className="w-4 h-4" /> Add Employee
+          + Add Employee
         </button>
       </div>
 
-      {error && <div className="text-red-600">{error}</div>}
-
-      <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+      {/* Employee Table */}
+      <div className="bg-white rounded-xl shadow overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-6 py-4 font-medium text-gray-700">Name</th>
-              <th className="px-6 py-4 font-medium text-gray-700">Role</th>
-              <th className="px-6 py-4 font-medium text-gray-700">Status</th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600">Name</th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600">Email</th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600">Role</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {employees.length === 0 ? (
-               <tr><td colSpan={3} className="p-6 text-center text-gray-500">No employees found.</td></tr>
-            ) : (
-              employees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{emp.first_name} {emp.last_name}</div>
-                    <div className="text-gray-500 text-xs">{emp.email}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-gray-900">{emp.job_title}</div>
-                    <div className="text-xs text-gray-500">{emp.role}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                      {emp.status}
-                    </span>
-                  </td>
-                </tr>
-              ))
+          <tbody>
+            {employees.map((emp: any) => (
+              <tr key={emp.id} className="border-b hover:bg-gray-50">
+                <td className="px-6 py-4">{emp.first_name} {emp.last_name}</td>
+                <td className="px-6 py-4">{emp.email}</td>
+                <td className="px-6 py-4">{emp.role}</td>
+              </tr>
+            ))}
+            {employees.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-6 py-10 text-center text-gray-400">No employees found. Add your first one!</td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
-
-      {/* RENDER THE MODAL */}
-      <CreateEmployeeModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchEmployees} // Refresh list after success
-      />
+      
+      {/* Simple Add Modal logic can go here... */}
     </div>
   );
 };
