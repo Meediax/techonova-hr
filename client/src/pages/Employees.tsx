@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const Employees = () => {
   const [employees, setEmployees] = useState([]);
@@ -27,16 +28,23 @@ export const Employees = () => {
     setIsModalOpen(true);
   };
 
+  const { user } = useAuth(); // Make sure you import useAuth
+
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('/api/employees', newEmployee);
+      // Add the company_id from the logged-in user to the request
+      const employeeData = {
+        ...newEmployee,
+        company_id: user?.companyId // Or user?.company_id depending on your token payload
+      };
+      
+      await axios.post('/api/employees', employeeData);
       setIsModalOpen(false);
-      setNewEmployee({ first_name: '', last_name: '', email: '', role: 'Employee' });
-      fetchEmployees();
+      fetchEmployees(); 
     } catch (err) {
       console.error("POST Error:", err);
-      alert("Failed to save employee to database.");
+      alert("Failed to save employee. Check if company_id is missing.");
     }
   };
 
