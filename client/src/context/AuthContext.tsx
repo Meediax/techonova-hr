@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 interface User {
@@ -26,18 +26,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // 🛡️ SAFETY CHECK: Ensure token has 3 parts before splitting
+          // Safety Check: Ensure token looks valid (3 parts separated by dots)
           const parts = token.split('.');
           if (parts.length === 3) {
+            // Decode the payload
             const payload = JSON.parse(atob(parts[1]));
+            
+            // Set default header for all future requests
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            
             setUser({ userId: payload.userId, email: payload.email, role: payload.role });
           } else {
             throw new Error("Invalid token format");
           }
         } catch (err) {
           console.error("Session invalid, clearing token:", err);
-          localStorage.removeItem('token'); // Nuke the bad token
+          localStorage.removeItem('token');
           delete axios.defaults.headers.common['Authorization'];
         }
       }
@@ -48,14 +52,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // 2. Login Function
   const login = async (email: string, password: string) => {
-    // 👇 CRITICAL FIX: Remove "http://localhost:3000"
-    // Use the relative path so it uses the baseURL from main.tsx
+    // Uses the baseURL set in main.tsx
     const res = await axios.post('/api/auth/login', { email, password });
     
     const { token, user: userData } = res.data;
     localStorage.setItem('token', token);
     
-    // Set header for future requests
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setUser(userData);
   };
