@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. Check if user is logged in on page load
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
@@ -28,11 +29,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const parts = token.split('.');
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1]));
+            // Restore session
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             setUser({ userId: payload.userId, email: payload.email, role: payload.role });
+          } else {
+            throw new Error("Invalid token format");
           }
         } catch (err) {
-          // 👇 FIXED: Ensure we log "err", not "error"
           console.error("Session invalid:", err);
           localStorage.removeItem('token');
           delete axios.defaults.headers.common['Authorization'];
@@ -43,26 +46,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkAuth();
   }, []);
 
+  // 2. Login Function (Updated to manually decode token)
   const login = async (email: string, password: string) => {
+    // Call backend
     const res = await axios.post('/api/auth/login', { email, password });
     
-    // 1. Get the token
-    const { token } = res.data; 
+    // Get token
+    const { token } = res.data;
     
-    // 2. Save it immediately
+    // Save token
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
-    // 3. Manually decode the user from the token (Safer than relying on res.data.user)
-    // This ensures that if the token exists, the user exists.
+    // Decode user data from token immediately
+    // This ensures we don't rely on the backend sending a separate 'user' object
     try {
-        const parts = token.split('.');
-        const payload = JSON.parse(atob(parts[1]));
-        setUser({ userId: payload.userId, email: payload.email, role: payload.role });
+      const parts = token.split('.');
+      const payload = JSON.parse(atob(parts[1]));
+      setUser({ userId: payload.userId, email: payload.email, role: payload.role });
     } catch (e) {
-        console.error("Token decode failed during login", e);
+      console.error("Failed to decode token", e);
     }
   };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+}; // <--- This closing brace was likely missing!
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
