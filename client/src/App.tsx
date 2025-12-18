@@ -8,7 +8,7 @@ import { Profile } from './pages/Profile';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-// 🛡️ The Bouncer: Checks if user is logged in
+// 🛡️ The Bouncer: Ensures only logged-in users see the dashboard
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
@@ -21,15 +21,16 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Login */}
+          {/* Public Route */}
           <Route path="/login" element={<Login />} />
 
-          {/* All these pages will now have the Sidebar/Menu thanks to DashboardLayout */}
+          {/* Protected Routes wrapped in DashboardLayout */}
           <Route path="/" element={
             <ProtectedRoute>
               <DashboardLayout />
             </ProtectedRoute>
           }>
+            {/* These render inside the Outlet of DashboardLayout */}
             <Route index element={<Dashboard />} />
             <Route path="employees" element={<Employees />} />
             <Route path="time-off" element={<TimeOff />} />
@@ -37,7 +38,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
           </Route>
 
-          {/* Redirect any typos to home */}
+          {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
