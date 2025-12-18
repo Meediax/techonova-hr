@@ -20,27 +20,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Check if user is logged in on page load
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // Safety Check: Ensure token looks valid (3 parts separated by dots)
           const parts = token.split('.');
           if (parts.length === 3) {
-            // Decode the payload
             const payload = JSON.parse(atob(parts[1]));
-            
-            // Set default header for all future requests
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            
             setUser({ userId: payload.userId, email: payload.email, role: payload.role });
-          } else {
-            throw new Error("Invalid token format");
           }
         } catch (err) {
-          console.error("Session invalid, clearing token:", err);
+          // 👇 FIXED: Ensure we log "err", not "error"
+          console.error("Session invalid:", err);
           localStorage.removeItem('token');
           delete axios.defaults.headers.common['Authorization'];
         }
@@ -50,14 +43,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkAuth();
   }, []);
 
-  // 2. Login Function
   const login = async (email: string, password: string) => {
-    // Uses the baseURL set in main.tsx
+    // Uses relative path to respect main.tsx config
     const res = await axios.post('/api/auth/login', { email, password });
-    
     const { token, user: userData } = res.data;
     localStorage.setItem('token', token);
-    
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setUser(userData);
   };

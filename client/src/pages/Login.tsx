@@ -4,19 +4,23 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
 
 export const Login = () => {
-  // ... state hooks stay same ...
-  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [uiError, setUiError] = useState(''); // Renamed to uiError to avoid confusion
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // 🛑 STOP THE REFRESH
-    console.log("Login button clicked!"); // Debug log
-    setError('');
+    e.preventDefault();
+    setUiError('');
     
     try {
       await login(email, password);
       navigate('/');
     } catch (err) {
+      // 👇 FIXED: Ensure we log "err", not "error"
       console.error("Login failed:", err);
-      setError('Invalid email or password');
+      setUiError('Invalid email or password');
     }
   };
 
@@ -28,9 +32,9 @@ export const Login = () => {
           <p className="text-gray-500 mt-2">Sign in to your account</p>
         </div>
 
-        {error && (
+        {uiError && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm">
-            {error}
+            {uiError}
           </div>
         )}
 
@@ -40,39 +44,32 @@ export const Login = () => {
             <div className="relative">
               <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
               <input
-                id="email"         // 👈 Added ID
-                name="email"       // 👈 Added Name
+                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none"
                 placeholder="admin@technova.com"
                 required
               />
             </div>
           </div>
-
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
             <div className="relative">
               <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
               <input
-                id="password"      // 👈 Added ID
-                name="password"    // 👈 Added Name
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none"
                 placeholder="••••••••"
                 required
               />
             </div>
           </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-          >
+          <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700">
             Sign In
           </button>
         </form>
