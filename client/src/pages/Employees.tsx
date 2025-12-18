@@ -34,24 +34,22 @@ export const Employees = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Ensure data is tagged with the user's company_id from the Auth context
+      // Temporary: Save WITHOUT company_id to test database write access
       const payload = {
-        ...newEmployee,
-        company_id: user?.companyId || user?.company_id 
+        first_name: newEmployee.first_name,
+        last_name: newEmployee.last_name,
+        email: newEmployee.email,
+        role: newEmployee.role,
+        employment_type: newEmployee.employment_type
       };
 
       await axios.post('/api/employees', payload);
       
-      // Reset and close
       setIsModalOpen(false);
-      setNewEmployee({ 
-        first_name: '', last_name: '', email: '', 
-        role: 'Employee', employment_type: 'Full-time' 
-      });
-      fetchEmployees();
+      fetchEmployees(); // Refresh the list
     } catch (err) {
-      console.error("Error adding employee:", err);
-      alert("Failed to save employee. Ensure all fields are valid.");
+      console.error("Database Save Error:", err);
+      alert("Failed to save. Your database might require a Company ID.");
     } finally {
       setLoading(false);
     }
