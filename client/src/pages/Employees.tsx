@@ -1,157 +1,97 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, X, User, Mail, Briefcase } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 export const Employees = () => {
   const [employees, setEmployees] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [newEmployee, setNewEmployee] = useState({ 
-    first_name: '', 
-    last_name: '', 
-    email: '', 
-    role: 'Employee' 
+    first_name: '', last_name: '', email: '', role: 'Employee' 
   });
 
   const fetchEmployees = async () => {
     try {
       const res = await axios.get('/api/employees');
+      console.log("Fetched Employees:", res.data);
       setEmployees(res.data);
     } catch (err) {
-      console.error("Failed to fetch employees", err);
+      console.error("Fetch error:", err);
     }
   };
 
   useEffect(() => { fetchEmployees(); }, []);
 
+  // Use this to test if the button even works
+  const openModal = () => {
+    console.log("Opening Modal...");
+    setIsModalOpen(true);
+  };
+
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     try {
       await axios.post('/api/employees', newEmployee);
       setIsModalOpen(false);
       setNewEmployee({ first_name: '', last_name: '', email: '', role: 'Employee' });
       fetchEmployees();
     } catch (err) {
-      console.error("Error details:", err);
-      alert("Error adding employee. Please try again.");
-    } finally {
-      setLoading(false);
+      console.error("POST Error:", err);
+      alert("Failed to save employee to database.");
     }
   };
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
-          <p className="text-sm text-gray-500">Manage your team members and roles</p>
-        </div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Employee List</h1>
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-sm"
+          onClick={openModal}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
-          <Plus size={18} />
-          Add Employee
+          <Plus size={20} /> Add Employee
         </button>
       </div>
 
-      {/* Table Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow border">
         <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Email</th>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Role</th>
+              <th className="px-6 py-4">Name</th>
+              <th className="px-6 py-4">Email</th>
+              <th className="px-6 py-4">Role</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {employees.map((emp: any) => (
-              <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-medium text-gray-900">{emp.first_name} {emp.last_name}</td>
-                <td className="px-6 py-4 text-gray-600">{emp.email}</td>
-                <td className="px-6 py-4">
-                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
-                    {emp.role}
-                  </span>
-                </td>
-              </tr>
-            ))}
+          <tbody>
+            {employees.length > 0 ? (
+              employees.map((emp: any) => (
+                <tr key={emp.id} className="border-b">
+                  <td className="px-6 py-4">{emp.first_name} {emp.last_name}</td>
+                  <td className="px-6 py-4">{emp.email}</td>
+                  <td className="px-6 py-4">{emp.role}</td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan={3} className="p-10 text-center text-gray-400">No data found. Click Add to create one.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* --- ADD EMPLOYEE MODAL --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">New Employee</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={20} />
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl w-full max-w-md">
+            <div className="flex justify-between mb-4">
+              <h2 className="text-xl font-bold">Add New Employee</h2>
+              <button onClick={() => setIsModalOpen(false)}><X /></button>
             </div>
-            
-            <form onSubmit={handleAddEmployee} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">First Name</label>
-                  <input 
-                    required 
-                    className="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
-                    value={newEmployee.first_name} 
-                    onChange={e => setNewEmployee({...newEmployee, first_name: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Last Name</label>
-                  <input 
-                    required 
-                    className="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
-                    value={newEmployee.last_name} 
-                    onChange={e => setNewEmployee({...newEmployee, last_name: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email Address</label>
-                <input 
-                  required type="email" 
-                  className="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
-                  value={newEmployee.email} 
-                  onChange={e => setNewEmployee({...newEmployee, email: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Department Role</label>
-                <select 
-                  className="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  value={newEmployee.role}
-                  onChange={e => setNewEmployee({...newEmployee, role: e.target.value})}
-                >
-                  <option>Employee</option>
-                  <option>Manager</option>
-                  <option>Admin</option>
-                </select>
-              </div>
-              
-              <div className="pt-4 flex gap-3">
-                <button 
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-2.5 border rounded-lg font-medium text-gray-600 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300"
-                >
-                  {loading ? 'Adding...' : 'Create Employee'}
-                </button>
-              </div>
+            <form onSubmit={handleAddEmployee} className="space-y-4">
+              <input required placeholder="First Name" className="w-full border p-2 rounded" 
+                onChange={e => setNewEmployee({...newEmployee, first_name: e.target.value})} />
+              <input required placeholder="Last Name" className="w-full border p-2 rounded" 
+                onChange={e => setNewEmployee({...newEmployee, last_name: e.target.value})} />
+              <input required type="email" placeholder="Email" className="w-full border p-2 rounded" 
+                onChange={e => setNewEmployee({...newEmployee, email: e.target.value})} />
+              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">Save Employee</button>
             </form>
           </div>
         </div>
