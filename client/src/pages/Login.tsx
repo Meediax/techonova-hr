@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, Loader2 } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react'; // 👈 removed Loader2
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -9,14 +9,13 @@ export const Login = () => {
   const [uiError, setUiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // 👇 Get 'user' from context so we can watch it
   const { login, user } = useAuth(); 
   const navigate = useNavigate();
 
-  // 👇 THE FIX: Auto-redirect as soon as 'user' exists
+  // 1. Auto-redirect when user is detected
   useEffect(() => {
     if (user) {
-      console.log("User detected, redirecting to Dashboard...");
+      console.log("✅ User logged in! Redirecting to Dashboard...");
       navigate('/');
     }
   }, [user, navigate]);
@@ -27,9 +26,9 @@ export const Login = () => {
     setIsSubmitting(true);
 
     try {
-      // We just call login. We don't manually navigate anymore.
-      // The useEffect above will handle the navigation when the state updates.
+      console.log("Attempting login...");
       await login(email, password);
+      // No need to navigate here; the useEffect above handles it
     } catch (err) {
       console.error("Login failed:", err);
       setUiError('Invalid email or password');
@@ -53,11 +52,10 @@ export const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
             <div className="relative">
               <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
               <input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -70,11 +68,10 @@ export const Login = () => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
             <div className="relative">
               <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
               <input
-                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -89,18 +86,11 @@ export const Login = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full py-2.5 rounded-lg font-semibold text-white transition-colors shadow-md flex justify-center items-center ${
-              isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            className={`w-full py-2.5 rounded-lg font-semibold text-white transition-colors shadow-md ${
+              isSubmitting ? 'bg-blue-400 cursor-wait' : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Signing In...
-              </>
-            ) : (
-              'Sign In'
-            )}
+            {isSubmitting ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
       </div>
