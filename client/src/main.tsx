@@ -4,11 +4,13 @@ import App from './App.tsx'
 import './index.css'
 import axios from 'axios'
 
-// Set API URL based on environment
-if (import.meta.env.VITE_API_URL) {
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL;
-} else {
-  axios.defaults.baseURL = 'http://localhost:3000';
+// 1. Set the Base URL for the backend
+axios.defaults.baseURL = 'https://technova-api-1usx.onrender.com';
+
+// 2. Attach the token if it exists in local storage
+const token = localStorage.getItem('token');
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
