@@ -4,21 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
 
 export const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const { login } = useAuth(); // <--- Use the context hook
-  const navigate = useNavigate();
-
+  // ... state hooks stay same ...
+  
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // 🛑 STOP THE REFRESH
+    console.log("Login button clicked!"); // Debug log
     setError('');
     
     try {
-      // 👇 This now uses the logic in AuthContext, which respects the Vercel URL
       await login(email, password);
       navigate('/');
     } catch (err) {
+      console.error("Login failed:", err);
       setError('Invalid email or password');
     }
   };
@@ -39,10 +36,12 @@ export const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
             <div className="relative">
               <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
               <input
+                id="email"         // 👈 Added ID
+                name="email"       // 👈 Added Name
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -54,10 +53,12 @@ export const Login = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
             <div className="relative">
               <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
               <input
+                id="password"      // 👈 Added ID
+                name="password"    // 👈 Added Name
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

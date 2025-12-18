@@ -25,18 +25,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
       if (token) {
-        // Set default header for all future requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         try {
-          // 👇 NOTICE: No "http://localhost:3000" here. Just the path.
-          // Axios will verify the token with the backend
-          // (Assuming you have a verify route, or we just decode the token locally)
-          // For simplicity in this project, we often just trust the token exists:
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          setUser({ userId: payload.userId, email: payload.email, role: payload.role });
+          // 🛡️ SAFETY CHECK: Ensure token has 3 parts before splitting
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            setUser({ userId: payload.userId, email: payload.email, role: payload.role });
+          } else {
+            throw new Error("Invalid token format");
+          }
         } catch (err) {
-          console.error("Invalid token", err);
-          localStorage.removeItem('token');
+          console.error("Session invalid, clearing token:", err);
+          localStorage.removeItem('token'); // Nuke the bad token
+          delete axios.defaults.headers.common['Authorization'];
         }
       }
       setLoading(false);
