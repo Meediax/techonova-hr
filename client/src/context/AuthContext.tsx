@@ -44,25 +44,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Uses relative path to respect main.tsx config
     const res = await axios.post('/api/auth/login', { email, password });
-    const { token, user: userData } = res.data;
+    
+    // 1. Get the token
+    const { token } = res.data; 
+    
+    // 2. Save it immediately
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setUser(userData);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+    
+    // 3. Manually decode the user from the token (Safer than relying on res.data.user)
+    // This ensures that if the token exists, the user exists.
+    try {
+        const parts = token.split('.');
+        const payload = JSON.parse(atob(parts[1]));
+        setUser({ userId: payload.userId, email: payload.email, role: payload.role });
+    } catch (e) {
+        console.error("Token decode failed during login", e);
+    }
 };
 
 export const useAuth = () => {
